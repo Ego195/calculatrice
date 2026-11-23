@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f0e9" />
+    <meta
+      name="description"
+      content="Ego Calculo, une calculatrice élégante avec un espace de calcul matriciel en direct."
+    />
+    <title>Ego Calculo — Calculatrice de précision</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="startup-screen" id="startup-screen" role="dialog" aria-modal="true" aria-label="Démarrage de la calculatrice Ego Calculo">
+      <div class="startup-sequence">
+        <div class="startup-calculator" aria-hidden="true">
+          <div class="startup-calculator-top"><span></span><span>EGO / CALCULATOR</span><span>BOOT 01</span></div>
+          <div class="startup-display"><span>INITIALISATION...</span><span class="startup-display-mark">e.</span></div>
+          <div class="startup-keys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="startup-identity">
+          <span class="startup-mini-sphere" aria-hidden="true"></span>
+          <span class="startup-name">EGO</span>
+        </div>
+        <p class="startup-message" aria-live="polite">CALCULATRICE EN DÉMARRAGE</p>
+        <div class="startup-progress" aria-hidden="true"><span></span></div>
+      </div>
+      <button class="startup-skip" id="skip-startup" type="button">PASSER L'INTRO</button>
+    </div>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div class="custom-cursor" aria-hidden="true"><span></span></div>
+    <svg class="sky-constellations" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+      <g class="constellation-lines">
+        <path d="M170 220 L270 185 L350 290 L500 485 L650 305 L760 205" />
+        <path d="M270 185 L325 100 M760 205 L820 110 M350 290 L310 410 L470 495 L630 410 L650 305" />
+        <path class="sirius-link" d="M500 485 Q455 610 380 760" />
+      </g>
+      <g class="constellation-stars">
+        <circle cx="170" cy="220" r="5" /><circle cx="270" cy="185" r="4" />
+        <circle cx="350" cy="290" r="3" /><circle cx="500" cy="485" r="4" />
+        <circle cx="650" cy="305" r="4" /><circle cx="760" cy="205" r="5" />
+        <circle cx="310" cy="410" r="3" /><circle cx="470" cy="495" r="3" />
+        <circle cx="630" cy="410" r="3" /><circle class="sirius-star" cx="380" cy="760" r="6" />
+      </g>
+      <g class="constellation-labels">
+        <text x="175" y="185">ORION</text>
+        <text x="392" y="774">SIRIUS</text>
+      </g>
+    </svg>
+
+    <main class="app-shell">
+      <header class="topbar" data-reveal>
+        <a class="brand" href="#" aria-label="Ego Calculo, accueil">
+          <span class="brand-mark">e<span>.</span></span>
+          <span class="brand-name">ego<span>calculo</span></span>
+        </a>
+        <div class="topbar-note"><span class="live-dot"></span> L'atelier du calcul</div>
+        <div class="topbar-actions">
+          <a class="creator" href="#atelier">CRÉÉ PAR <strong>EGO</strong></a>
+          <div class="profile-placeholder" role="img" aria-label="Emplacement réservé à la photo de profil d'Ego">
+            <span class="profile-head" aria-hidden="true"></span>
+            <span class="profile-shoulders" aria-hidden="true"></span>
+          </div>
+        </div>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title" data-reveal>
+        <div>
+          <p class="eyebrow"><span>01</span> PRÉCISION, TOUT SIMPLEMENT</p>
+          <h1 id="page-title">SOLLO <em>TSALA</em></h1>
+        </div>
+        <div class="bio-reveal" id="bio-reveal" aria-hidden="true">
+          <span>À PROPOS</span>
+          <p>Ingénieur informaticien et développeur web, je conçois des expériences numériques avec les technologies du Web.</p>
+        </div>
+        <p class="intro-copy">Développeur Python · JavaScript · React</p>
+      </section>
+
+      <section class="workspace" id="atelier">
+        <section class="matrix-panel" id="matrix-panel" aria-labelledby="matrix-title" data-reveal>
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">RÉSULTAT <span>·</span> EN DIRECT</p>
+              <h2 id="matrix-title">Votre résultat</h2>
+            </div>
+            <span class="live-pill"><span class="live-dot"></span> RÉSULTAT EN DIRECT</span>
+          </div>
+          <section class="matrix-workflow" id="matrix-workflow" aria-label="Saisie des matrices">
+            <label class="calc-operation-label" for="matrix-operation">OPÉRATION</label>
+            <div class="select-wrap matrix-operation-wrap">
+              <select id="matrix-operation" aria-label="Opération matricielle">
+                <option value="add">Addition · A + B</option>
+                <option value="subtract">Soustraction · A − B</option>
+                <option value="multiply" selected>Produit matriciel · A × B</option>
+                <option value="divide">Division · A ÷ B</option>
+                <option value="scalarA">Scalaire · k × A</option>
+                <option value="scalarB">Scalaire · k × B</option>
+                <option value="detA">Déterminant · det(A)</option>
+                <option value="detB">Déterminant · det(B)</option>
+                <option value="inverseA">Inverse · A⁻¹</option>
+                <option value="inverseB">Inverse · B⁻¹</option>
+              </select>
+              <span aria-hidden="true">⌄</span>
+            </div>
+            <label class="scalar-row" id="scalar-row" hidden for="matrix-scalar">
+              <span>SCALAIRE <i>k</i></span>
+              <input id="matrix-scalar" type="text" inputmode="decimal" value="2" aria-label="Valeur du scalaire k" />
+            </label>
+            <div class="matrix-editors">
+              <article class="matrix-card">
+                <div class="matrix-card-head">
+                  <span class="matrix-name">MATRICE <span>A</span></span>
+                  <div class="dimensions">
+                    <label><span class="sr-only">Lignes de A</span><select id="matrix-a-rows"></select></label>
+                    <span>×</span>
+                    <label><span class="sr-only">Colonnes de A</span><select id="matrix-a-cols"></select></label>
+                  </div>
+                </div>
+                <div class="matrix-grid-wrap"><div class="matrix-grid" id="matrix-a-grid"></div></div>
+              </article>
+              <article class="matrix-card">
+                <div class="matrix-card-head">
+                  <span class="matrix-name">MATRICE <span>B</span></span>
+                  <div class="dimensions">
+                    <label><span class="sr-only">Lignes de B</span><select id="matrix-b-rows"></select></label>
+                    <span>×</span>
+                    <label><span class="sr-only">Colonnes de B</span><select id="matrix-b-cols"></select></label>
+                  </div>
+                </div>
+                <div class="matrix-grid-wrap"><div class="matrix-grid" id="matrix-b-grid"></div></div>
+              </article>
+            </div>
+            <p class="matrix-key-hint">Choisissez les dimensions puis saisissez les valeurs au pavé à droite ou au clavier.</p>
+          </section>
+
+          <section class="result-card" aria-labelledby="result-title" data-reveal>
+            <div class="result-heading">
+              <div>
+                <p class="section-kicker">VOTRE RÉSULTAT</p>
+                <h3 id="result-title">A × B</h3>
+              </div>
+              <span class="result-symbol" aria-hidden="true">↗</span>
+            </div>
+            <div class="result-content" id="matrix-result" aria-live="polite" aria-atomic="true"></div>
+          </section>
+          <div class="result-guide">
+            <span class="guide-icon">↙</span>
+            <p>Utilisez les flèches du pavé pour naviguer entre les cellules. Le résultat se recalcule automatiquement.</p>
+          </div>
+          <p class="matrix-footnote" id="matrix-status" role="status">Utilisez les flèches ← ↑ ↓ → pour passer d'une cellule à l'autre.</p>
+        </section>
+
+        <div class="sphere-stage" role="img" aria-label="Sphère 3D lumineuse en rotation" data-reveal>
+          <div class="sphere-orbit orbit-one"></div>
+          <div class="sphere-orbit orbit-two"></div>
+          <div class="sphere-halo"></div>
+          <div class="sphere-wireframe">
+            <span class="sphere-ring-y" style="transform: rotateY(0deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(30deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(60deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(90deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(120deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(150deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(180deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(210deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(240deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(270deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(300deg)"></span>
+            <span class="sphere-ring-y" style="transform: rotateY(330deg)"></span>
+            <span class="sphere-ring-x" style="transform: rotateX(0deg)"></span>
+            <span class="sphere-ring-x" style="transform: rotateX(30deg)"></span>
+            <span class="sphere-ring-x" style="transform: rotateX(60deg)"></span>
+            <span class="sphere-ring-x" style="transform: rotateX(90deg)"></span>
+            <span class="sphere-ring-x" style="transform: rotateX(120deg)"></span>
+            <span class="sphere-ring-x" style="transform: rotateX(150deg)"></span>
+            <div class="core-inner-glow"></div>
+            <span class="sphere-vertex v-top"></span>
+            <span class="sphere-vertex v-bottom"></span>
+          </div>
+          <span class="sphere-caption">AGIRA_CORE : STANDBY</span>
+        </div>
+
+        <aside class="calculator-card" id="calculator" aria-label="Calculatrice" data-reveal>
+          <div class="calculator-top">
+            <div class="calc-brand"><span class="calc-brand-mark">e.</span><span>EGO <small>CALCULATOR</small></span></div>
+            <span class="calc-status"><i></i> PRÊTE</span>
+          </div>
+          <div class="calc-tabs" role="tablist" aria-label="Mode de la calculatrice">
+            <button class="calc-tab" type="button" role="tab" data-calculator-mode="standard" aria-selected="false">CALCULATRICE</button>
+            <button class="calc-tab is-active" type="button" role="tab" data-calculator-mode="matrix" aria-selected="true">▦ MATRICES</button>
+          </div>
+          <div class="display" aria-label="Écran de la calculatrice">
+            <div class="display-expression" id="display-expression" aria-live="polite">MATRICE A · LIGNE 1, COLONNE 1</div>
+            <output class="display-value" id="display-value" aria-live="assertive">0</output>
+          </div>
+          <div class="active-cell-label" id="active-cell-label">CELLULE ACTIVE · A₁,₁</div>
+          <div class="matrix-controls" id="matrix-controls">
+            <div class="matrix-pad" id="matrix-pad" aria-label="Pavé de saisie matricielle">
+              <button class="key" type="button" data-number="7">7</button>
+              <button class="key" type="button" data-number="8">8</button>
+              <button class="key" type="button" data-number="9">9</button>
+              <button class="key key-utility" type="button" data-matrix-action="backspace" aria-label="Effacer le dernier chiffre">⌫</button>
+              <button class="key" type="button" data-number="4">4</button>
+              <button class="key" type="button" data-number="5">5</button>
+              <button class="key" type="button" data-number="6">6</button>
+              <button class="key" type="button" data-number="1">1</button>
+              <button class="key" type="button" data-number="2">2</button>
+              <button class="key" type="button" data-number="3">3</button>
+              <button class="key key-utility" type="button" data-matrix-action="clear" aria-label="Effacer la cellule">C</button>
+              <button class="key key-utility" type="button" data-matrix-action="sign" aria-label="Changer le signe">+/−</button>
+              <button class="key" type="button" data-number="0">0</button>
+              <button class="key key-utility" type="button" data-matrix-action="decimal" aria-label="Séparateur décimal">,</button>
+            </div>
+            <div class="matrix-navigation" aria-label="Navigation dans les cellules">
+              <button class="key key-arrow" type="button" data-move="left" aria-label="Cellule précédente, vers la gauche">←</button>
+              <button class="key key-arrow" type="button" data-move="up" aria-label="Cellule précédente, vers le haut">↑</button>
+              <button class="key key-arrow" type="button" data-move="down" aria-label="Cellule suivante, vers le bas">↓</button>
+              <button class="key key-arrow" type="button" data-move="right" aria-label="Cellule suivante, vers la droite">→</button>
+            </div>
+          </div>
+          <div class="keypad" id="keypad" hidden>
+            <button class="key key-utility" type="button" data-action="clear" aria-label="Tout effacer">AC</button>
+            <button class="key key-utility" type="button" data-action="sign" aria-label="Changer le signe">+/−</button>
+            <button class="key key-utility" type="button" data-action="percent" aria-label="Pourcentage">%</button>
+            <button class="key key-operator" type="button" data-operator="÷" aria-label="Diviser">÷</button>
+
+            <button class="key" type="button" data-number="7">7</button>
+            <button class="key" type="button" data-number="8">8</button>
+            <button class="key" type="button" data-number="9">9</button>
+            <button class="key key-operator" type="button" data-operator="×" aria-label="Multiplier">×</button>
+
+            <button class="key" type="button" data-number="4">4</button>
+            <button class="key" type="button" data-number="5">5</button>
+            <button class="key" type="button" data-number="6">6</button>
+            <button class="key key-operator" type="button" data-operator="−" aria-label="Soustraire">−</button>
+
+            <button class="key" type="button" data-number="1">1</button>
+            <button class="key" type="button" data-number="2">2</button>
+            <button class="key" type="button" data-number="3">3</button>
+            <button class="key key-operator" type="button" data-operator="+" aria-label="Additionner">+</button>
+
+            <button class="key key-zero" type="button" data-number="0">0</button>
+            <button class="key" type="button" data-action="decimal" aria-label="Virgule décimale">,</button>
+            <button class="key key-equals" type="button" data-action="equals" aria-label="Égal">=</button>
+          </div>
+          <div class="calculator-footer"><span>DES CALCULS QUI ONT DU SENS</span><span>© EGO 2026</span></div>
+        </aside>
+      </section>
+
+      <footer class="page-footer" data-reveal>
+        <span>CONÇU AVEC SOIN <span class="footer-star">✳</span> PAR EGO</span>
+        <span>UN ESPACE POUR PENSER EN GRAND.</span>
+      </footer>
+    </main>
+  </body>
+</html>
