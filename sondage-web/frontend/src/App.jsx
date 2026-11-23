@@ -14,33 +14,95 @@ const EMPTY_RESULTS = CHOICES.map((item) => ({
 }));
 
 function Globe() {
+  const technologies = ["python", "react", "supabase", "render"];
+
   return (
-    <div className="globe-scene" aria-hidden="true">
+    <div
+      className="globe-scene"
+      role="img"
+      aria-label="Sphère lumineuse entourée des technologies Python, React, Supabase et Render"
+    >
       <div className="globe-aura" />
       <div className="globe-orbit globe-orbit-one" />
       <div className="globe-orbit globe-orbit-two" />
-      <div className="wire-globe">
+      <svg className="globe-slogan" viewBox="0 0 320 320" aria-hidden="true">
+        <defs>
+          <path
+            id="globe-slogan-path"
+            d="M160 160 m-140 0 a140 140 0 1 1 280 0 a140 140 0 1 1 -280 0"
+          />
+        </defs>
+        <text>
+          <textPath href="#globe-slogan-path" textLength="680" lengthAdjust="spacing">
+            UNE VOIX · UN INSTANT · UNE CLASSE · UNE VOIX · UN INSTANT · UNE CLASSE ·
+          </textPath>
+        </text>
+      </svg>
+      <div className="wire-globe" aria-hidden="true">
         {Array.from({ length: 9 }, (_, index) => (
           <span
             className="globe-ring globe-ring-vertical"
-            key={index}
+            key={`vertical-${index}`}
             style={{ "--ring-rotation": `${index * 20}deg` }}
           />
         ))}
         {[0, 1, 2, 3, 4].map((index) => (
           <span
             className="globe-ring globe-ring-horizontal"
-            key={index}
+            key={`horizontal-${index}`}
             style={{
               "--ring-height": `${22 + index * 14}%`,
               "--ring-scale": `${0.35 + index * 0.16}`,
             }}
           />
         ))}
-        <span className="globe-core" />
+      </div>
+      <span className="globe-core" />
+      <div className="orbit-technologies" aria-hidden="true">
+        {technologies.map((technology) => (
+          <span className={`orbit-tech orbit-tech-${technology}`} key={technology}>
+            <TechIcon technology={technology} />
+            <span>{technology}</span>
+          </span>
+        ))}
       </div>
       <span className="globe-caption">SIGNAL / 01</span>
     </div>
+  );
+}
+
+function TechIcon({ technology }) {
+  if (technology === "react") {
+    return (
+      <svg className="orbit-tech-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <ellipse cx="12" cy="12" rx="10" ry="4" />
+        <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
+        <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />
+        <circle cx="12" cy="12" r="1.6" />
+      </svg>
+    );
+  }
+  if (technology === "python") {
+    return (
+      <svg className="orbit-tech-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path className="python-mark-blue" d="M12 2.5c-4.4 0-4.5 2-4.5 4.5v2.1h9v1.3H6.3C3.6 10.4 2.5 12.5 2.5 15s1.3 4.1 4 4.1h2.2v-2c0-2.4 1.8-4.2 4.1-4.2h4.5c2.6 0 4.2-1.7 4.2-4.2V6.4c0-2.5-2.2-3.9-4.7-3.9H12Z" />
+        <path className="python-mark-yellow" d="M12 21.5c4.4 0 4.5-2 4.5-4.5v-2.1h-9v-1.3h10.2c2.7 0 3.8-2.1 3.8-4.6s-1.3-4.1-4-4.1h-2.2v2c0 2.4-1.8 4.2-4.1 4.2H6.7c-2.6 0-4.2 1.7-4.2 4.2v2.3c0 2.5 2.2 3.9 4.7 3.9H12Z" />
+        <circle className="python-eye" cx="10" cy="5.4" r=".8" />
+        <circle className="python-eye" cx="14" cy="18.6" r=".8" />
+      </svg>
+    );
+  }
+  if (technology === "supabase") {
+    return (
+      <svg className="orbit-tech-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M13.2 2.5 4.6 13h6.2l-.8 8.5L19.4 11h-6.2l.8-8.5Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="orbit-tech-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 20V4h7a4.5 4.5 0 0 1 0 9H5m7 0 7 7" />
+    </svg>
   );
 }
 
@@ -340,15 +402,22 @@ function App() {
             <div className="response-feed">
               <div className="feed-heading"><span>DERNIÈRES RÉPONSES</span><span>{votes.length} / 100</span></div>
               {votes.length ? (
-                <ul className="vote-list">
-                  {votes.slice(0, 12).map((vote) => (
-                    <li key={vote.id}>
-                      <span className="vote-avatar">{vote.nickname.slice(0, 1).toUpperCase()}</span>
-                      <span className="vote-nickname">{vote.nickname}</span>
-                      <span className="vote-choice">{vote.choice}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div
+                  className="vote-list-scroller"
+                  role="region"
+                  aria-label="Réponses les plus récentes en premier"
+                  tabIndex={0}
+                >
+                  <ul className="vote-list">
+                    {votes.map((vote) => (
+                      <li key={vote.id}>
+                        <span className="vote-avatar">{vote.nickname.slice(0, 1).toUpperCase()}</span>
+                        <span className="vote-nickname">{vote.nickname}</span>
+                        <span className="vote-choice">{vote.choice}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ) : <p className="empty-votes">Les premières réponses apparaitront ici.</p>}
             </div>
           </article>
