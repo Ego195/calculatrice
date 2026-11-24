@@ -1,10 +1,21 @@
 # Sondage — React, FastAPI et Supabase
 
-Application de sondage de classe. React affiche le formulaire, les resultats et les 100 reponses les plus recentes. FastAPI valide et enregistre les votes dans `public.votes` sur Supabase. Le site inclut egalement la calculatrice existante du depot.
+Le site React affiche le sondage actif, ses résultats et les réponses récentes. FastAPI valide les votes et parle à Supabase. La console d'administration est une application Windows séparée : elle permet de modifier le sondage actif, d'en publier un nouveau, de gérer l'historique et d'exporter les votes en CSV. Elle est intégrée à l'installateur et n'est pas publiée sur Vercel.
+
+## Initialiser Supabase
+
+Avant le premier déploiement de cette version :
+
+1. Dans Supabase, ouvrez **SQL Editor** et exécutez `backend/supabase_surveys_migration.sql`. Le script crée les tables `surveys` et `survey_choices`, crée le sondage initial et rattache les votes existants à celui-ci. Il peut être réexécuté sans dupliquer sa contrainte de clé étrangère ni le sondage initial.
+2. Exécutez ensuite `backend/supabase_policies.sql` afin d'autoriser la lecture publique et de vérifier que chaque vote correspond à un choix du sondage actif.
+3. Exécutez `backend/supabase_admin_management.sql`. Il ajoute les opérations sécurisées de modification du sondage actif et de suppression d'un sondage archivé avec tous ses votes.
+4. Configurez les variables d'environnement décrites ci-dessous. Ne mettez jamais une clé secrète Supabase dans le frontend, Git ou un message.
+
+Faites une sauvegarde de la base avant toute migration en production. La clé `SUPABASE_SECRET_KEY` (ou l'ancienne clé `service_role`) doit rester uniquement dans les variables privées de Railway.
 
 ## Lancer en local
 
-Dans `sondage-web/backend`, creez un environnement virtuel et installez les dependances :
+Dans `sondage-web/backend`, créez un environnement virtuel et installez les dépendances :
 
 ```powershell
 py -m venv .venv
@@ -13,72 +24,74 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Renseignez `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY` dans `backend/.env`, puis lancez l'API :
+Renseignez `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` et `ADMIN_KEY` dans `backend/.env`, puis lancez l'API :
 
 ```powershell
 uvicorn main:app --reload --port 8000
 ```
 
-Dans un autre terminal, depuis la racine du depot :
+Dans un autre terminal, depuis la racine du dépôt :
 
 ```powershell
-npm --prefix sondage-web/frontend install
+npm --prefix sondage-web/frontend ci
 npm --prefix sondage-web/frontend run dev
 ```
 
-Ouvrez `http://localhost:5173`. L'API et sa documentation sont disponibles sur `http://localhost:8000` et `http://localhost:8000/docs`.
+Ouvrez `http://localhost:5173`. L'API est disponible sur `http://localhost:8000`; sa documentation se trouve sur `/docs`.
 
-Avant le premier vote, executez une fois `backend/supabase_policies.sql` dans le SQL Editor Supabase. La page affiche publiquement les pseudonymes fictifs et leurs choix.
+## Configuration et déploiement Railway + Vercel
 
-## Deployer sur Render
+### API sur Railway
 
-Le depot contient plusieurs projets. Pour que le site statique puisse aussi copier les fichiers de la calculatrice situes a la racine du depot, **laissez le Root Directory vide pour le Static Site**. Ne publiez jamais le fichier `backend/.env` : les secrets se configurent dans le tableau de bord Render.
+Déployez `sondage-web/backend` depuis le dépôt GitHub et configurez :
 
-### 1. Deployer l'API FastAPI
+- **Start command** : `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- `SUPABASE_URL` : URL du projet Supabase.
+- `SUPABASE_PUBLISHABLE_KEY` : clé publique Supabase.
+- `SUPABASE_SECRET_KEY` : clé secrète Supabase, conservée uniquement côté Railway.
+- `ADMIN_KEY` : une clé d'administration longue, générée et conservée privée.
+- `FRONTEND_ORIGINS` : origine HTTPS du site Vercel, sans chemin ni slash final.
+- `WEB3FORMS_ACCESS_KEY` et `NOTIFICATION_EMAIL` : facultatives pour les notifications par courriel.
 
-1. Dans Render, choisissez **New + → Web Service** et connectez le depot GitHub `Ego195/calculatrice`, branche `main`.
-2. Configurez le service :
-   - **Root Directory** : `sondage-web/backend`
-   - **Runtime** : Python 3
-   - **Build Command** : `pip install -r requirements.txt`
-   - **Start Command** : `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - **Health Check Path** : `/api/health`
-3. Dans **Environment**, ajoutez :
-   - `SUPABASE_URL` : URL du projet Supabase.
-   - `SUPABASE_PUBLISHABLE_KEY` : cle publishable Supabase. N'utilisez jamais la `service_role` dans l'application.
-   - `ADMIN_KEY` : une longue cle aleatoire, gardee privee, pour proteger l'export CSV.
-   - `FRONTEND_ORIGINS` : a completer a l'etape 3 avec l'origine HTTPS du Static Site.
-   - `WEB3FORMS_ACCESS_KEY` et `NOTIFICATION_EMAIL` : facultatifs, uniquement si les notifications email sont activees.
-4. Lancez le deploiement et notez l'URL HTTPS de l'API, par exemple `https://sondage-api.onrender.com`.
-5. Verifiez `https://<url-api>/api/health`. La reponse attendue indique `status: ok` et `database: supabase`.
+Vérifiez `https://<url-api>/api/health`.
 
-### 2. Deployer le site React et la calculatrice
+### Interface sur Vercel
 
-1. Dans Render, choisissez **New + → Static Site** avec le meme depot et la branche `main`.
-2. Configurez :
-   - **Root Directory** : laissez ce champ vide (racine du depot).
-   - **Build Command** : `npm --prefix sondage-web/frontend ci && npm --prefix sondage-web/frontend run build`
-   - **Publish Directory** : `sondage-web/frontend/dist`
-3. Dans **Environment**, ajoutez `VITE_API_URL` avec l'URL HTTPS de l'API de l'etape 1, sans slash final, par exemple `https://sondage-api.onrender.com`.
-4. Lancez le deploiement. Render fournit une URL HTTPS pour le site.
+Pour garder accessibles les fichiers de la calculatrice qui se trouvent à la racine du dépôt, laissez le **Root Directory** sur la racine du dépôt. Configurez :
 
-Le build Vite copie automatiquement `index.html`, `styles.css` et `app.js` de la calculatrice dans `dist/calculatrice`. Le lien **CALCULATRICE** ouvre `/calculatrice/index.html` dans un nouvel onglet; le sondage reste accessible dans l'onglet initial.
+- **Build command** : `npm --prefix sondage-web/frontend ci && npm --prefix sondage-web/frontend run build`
+- **Output directory** : `sondage-web/frontend/dist`
+- `VITE_API_URL` : URL HTTPS de l'API Railway, sans slash final. Si elle est absente, le site utilise l'URL de production connue.
 
-### 3. Autoriser le domaine du site dans l'API
+Après avoir déployé Vercel, copiez son origine HTTPS dans `FRONTEND_ORIGINS` sur Railway, puis redéployez l'API afin d'appliquer la configuration CORS.
 
-1. Copiez l'origine HTTPS du Static Site, par exemple `https://sondage-classe.onrender.com` (sans chemin ni slash final).
-2. Dans le Web Service FastAPI, ajoutez ou mettez a jour `FRONTEND_ORIGINS` avec cette origine. Pour plusieurs domaines, separez-les par des virgules.
-3. Relancez le deploiement de l'API pour appliquer la configuration CORS.
+Le build Vercel ne contient que le site public et la calculatrice. La page source `admin.html` est compilée séparément dans `admin-dist` pour l'application Windows et n'est pas servie par Vercel.
 
-### 4. Verifier l'application en ligne
+## Application Windows
 
-1. Ouvrez l'URL HTTPS du Static Site et verifiez le formulaire et le classement.
-2. Cliquez sur **CALCULATRICE** et verifiez que `/calculatrice/index.html` s'ouvre. Revenez au sondage en reprenant l'onglet precedent.
-3. Envoyez un vote avec un pseudonyme fictif, puis verifiez sa presence dans le classement et dans `public.votes`.
-4. Verifiez aussi `https://<url-api>/api/health` et `https://<url-api>/docs`.
+L'installateur Electron embarque la console sur le PC. Elle n'est pas accessible depuis le site public. Lorsqu'elle est ouverte, l'application démarre un petit serveur limité à `127.0.0.1` et transmet ses appels à l'API Railway; il faut donc une connexion Internet pour administrer les sondages. La clé `ADMIN_KEY` est demandée dans l'application et reste en mémoire pendant la session.
 
-La variable `VITE_API_URL` est integree au build React : si l'URL de l'API change, mettez-la a jour puis redeployez le Static Site. Sur une offre Render qui met le Web Service en veille, le premier appel a l'API peut prendre plus de temps.
+Depuis `sondage-web/frontend`, ou depuis la racine avec `--prefix` :
 
-## Confidentialite et notifications
+```powershell
+npm --prefix sondage-web/frontend ci
+npm --prefix sondage-web/frontend run admin:installer
+```
 
-Utilisez uniquement des pseudonymes fictifs : la liste des pseudonymes et des choix est publique. Les notifications email sont desactivees tant que `WEB3FORMS_ACCESS_KEY` et `NOTIFICATION_EMAIL` ne sont pas configures. Gardez ces valeurs et `ADMIN_KEY` dans les variables d'environnement privees de Render, jamais dans React ou Git. Regenerez toute cle Web3Forms qui a deja ete exposee dans du code client.
+Le script compile d'abord la console dans `admin-dist`, puis crée le programme d'installation NSIS dans `sondage-web/frontend/release`. Il ajoute des raccourcis au menu Démarrer et au bureau. Les variables de configuration Vercel ne sont pas nécessaires pour le build de l'installateur.
+
+## Utiliser l'espace administrateur
+
+Lancez **Sondage Admin** depuis le menu Démarrer ou le raccourci du bureau, puis saisissez la valeur `ADMIN_KEY` configurée sur Railway :
+
+- **Télécharger le CSV** exporte les votes.
+- **Modifier le sondage actif** permet de changer le titre, la question et les consignes sans modifier les choix utilisés pour calculer les votes déjà collectés.
+- Pour créer un sondage, cliquez **Nouveau sondage**, renseignez son titre, sa question, la consigne et l'intitulé au-dessus des choix. Ajoutez ou retirez des choix (minimum 2, maximum 8), donnez un nom à chacun et, facultativement, une courte description. Cliquez **Publier le sondage**.
+- Un sondage archivé peut être supprimé depuis l'historique. La console exige de retaper `SUPPRIMER`; le sondage, ses choix et ses réponses seront alors définitivement effacés.
+- Le nouveau sondage devient actif. Les votes existants restent associés à l'ancien sondage; son titre, sa question et ses choix restent visibles dans l'historique.
+
+L'application ne stocke pas la clé administrateur après fermeture ou verrouillage de la session. Pour un déploiement de production, utilisez une clé secrète régénérée si une ancienne clé a déjà été exposée.
+
+## Confidentialité
+
+Les pseudonymes fictifs et les votes sont visibles publiquement dans l'application. N'utilisez pas de vrais noms ou renseignements personnels. Les clés d'administration et les clés secrètes Supabase restent exclusivement dans les variables d'environnement privées du backend.

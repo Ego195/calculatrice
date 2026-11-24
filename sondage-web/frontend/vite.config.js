@@ -44,6 +44,13 @@ function calculatorRoute() {
 
 export default defineConfig({
   plugins: [react(), calculatorRoute()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(frontendDirectory, "index.html"),
+      },
+    },
+  },
   server: {
     host: "0.0.0.0",
   },

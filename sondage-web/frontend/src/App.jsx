@@ -1,26 +1,66 @@
 import { useEffect, useState } from "react";
-import { downloadCsv, fetchResults, fetchVotes, sendVote } from "./api.js";
+import {
+  fetchActiveSurvey,
+  fetchVotesForSurvey,
+  sendVote,
+} from "./api.js";
 
-const CHOICES = [
+const DEFAULT_CHOICES = [
   { value: "Très bien", mark: "↗", note: "Au-dessus des attentes" },
   { value: "Bien", mark: "✳", note: "Une bonne expérience" },
   { value: "Moyen", mark: "◌", note: "Peut mieux faire" },
   { value: "À revoir", mark: "↻", note: "À retravailler ensemble" },
 ];
-const EMPTY_RESULTS = CHOICES.map((item) => ({
+const EMPTY_RESULTS = DEFAULT_CHOICES.map((item) => ({
   label: item.value,
   count: 0,
   percentage: 0,
 }));
+const EMPTY_SURVEY = {
+  id: "",
+  title: "TA VOIX",
+  question: "Comment as-tu vécu cette séance ?",
+  instruction: "Choisis le ressenti qui te correspond le mieux.",
+  choice_heading: "TON RESSENTI",
+  choices: DEFAULT_CHOICES.map((item) => ({
+    label: item.value,
+    description: item.note,
+    mark: item.mark,
+  })),
+};
+const TECHNOLOGIES = ["python", "react", "supabase", "vercel", "railway"];
 
 function Globe() {
-  const technologies = ["python", "react", "supabase", "render"];
+  const [technologies, setTechnologies] = useState(TECHNOLOGIES);
+  const [draggedTechnology, setDraggedTechnology] = useState("");
+
+  function exchangeTechnology(technology) {
+    const index = technologies.indexOf(technology);
+    if (index < 0) return;
+    const neighborIndex = (index + 1) % technologies.length;
+    setTechnologies((current) => {
+      const next = [...current];
+      [next[index], next[neighborIndex]] = [next[neighborIndex], next[index]];
+      return next;
+    });
+  }
+
+  function dropTechnology(targetTechnology) {
+    if (!draggedTechnology || draggedTechnology === targetTechnology) return;
+    setTechnologies((current) => {
+      const next = [...current];
+      const from = next.indexOf(draggedTechnology);
+      const to = next.indexOf(targetTechnology);
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+    setDraggedTechnology("");
+  }
 
   return (
     <div
       className="globe-scene"
-      role="img"
-      aria-label="Sphère lumineuse entourée des technologies Python, React, Supabase et Render"
+      aria-label="Sphère lumineuse entourée des technologies Python, React, Supabase, Vercel et Railway"
     >
       <div className="globe-aura" />
       <div className="globe-orbit globe-orbit-one" />
@@ -58,12 +98,30 @@ function Globe() {
         ))}
       </div>
       <span className="globe-core" />
-      <div className="orbit-technologies" aria-hidden="true">
-        {technologies.map((technology) => (
-          <span className={`orbit-tech orbit-tech-${technology}`} key={technology}>
+      <div className="orbit-technologies">
+        {technologies.map((technology, index) => (
+          <button
+            aria-label={`Déplacer ${technology} ou cliquer pour l’échanger avec son voisin`}
+            className={`orbit-tech orbit-tech-${technology} orbit-tech-slot-${index}${draggedTechnology === technology ? " is-dragged" : ""}`}
+            draggable
+            key={technology}
+            onClick={() => exchangeTechnology(technology)}
+            onDragEnd={() => setDraggedTechnology("")}
+            onDragOver={(event) => event.preventDefault()}
+            onDragStart={() => setDraggedTechnology(technology)}
+            onDrop={() => dropTechnology(technology)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                exchangeTechnology(technology);
+              }
+            }}
+            title="Glisser pour déplacer ou cliquer pour échanger"
+            type="button"
+          >
             <TechIcon technology={technology} />
             <span>{technology}</span>
-          </span>
+          </button>
         ))}
       </div>
       <span className="globe-caption">SIGNAL / 01</span>
@@ -99,9 +157,17 @@ function TechIcon({ technology }) {
       </svg>
     );
   }
+  if (technology === "vercel") {
+    return (
+      <svg className="orbit-tech-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 3 22 21H2L12 3Z" />
+      </svg>
+    );
+  }
   return (
     <svg className="orbit-tech-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M5 20V4h7a4.5 4.5 0 0 1 0 9H5m7 0 7 7" />
+      <path d="M4 17.5 12 4l8 13.5H4Z" />
+      <path d="M9 17.5h11" />
     </svg>
   );
 }
@@ -125,6 +191,19 @@ function Startup({ onSkip }) {
             {Array.from({ length: 8 }, (_, index) => <i key={index} />)}
           </div>
         </div>
+        <div className="startup-tech-stage" aria-hidden="true">
+          <span className="startup-stage-sphere" />
+          {TECHNOLOGIES.map((technology, index) => (
+            <span
+              className={`startup-tech startup-tech-${technology}`}
+              key={technology}
+              style={{ "--tech-index": index }}
+            >
+              <TechIcon technology={technology} />
+              <span>{technology}</span>
+            </span>
+          ))}
+        </div>
         <div className="startup-identity">
           <span className="startup-mini-sphere" />
           <span className="startup-name">SONDAGE</span>
@@ -141,6 +220,7 @@ function Startup({ onSkip }) {
 
 function App() {
   const [introVisible, setIntroVisible] = useState(true);
+  const [activeSurvey, setActiveSurvey] = useState(EMPTY_SURVEY);
   const [nickname, setNickname] = useState("");
   const [choice, setChoice] = useState("");
   const [results, setResults] = useState(EMPTY_RESULTS);
@@ -150,15 +230,12 @@ function App() {
   const [formMessage, setFormMessage] = useState("");
   const [formError, setFormError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [adminKey, setAdminKey] = useState("");
-  const [exportMessage, setExportMessage] = useState("");
-  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timer = window.setTimeout(
       () => setIntroVisible(false),
-      reduced ? 500 : 7600,
+      reduced ? 500 : 12000,
     );
     return () => window.clearTimeout(timer);
   }, []);
@@ -167,6 +244,10 @@ function App() {
     document.body.classList.toggle("intro-running", introVisible);
     return () => document.body.classList.remove("intro-running");
   }, [introVisible]);
+
+  useEffect(() => {
+    setChoice("");
+  }, [activeSurvey.id]);
 
   useEffect(() => {
     const elements = document.querySelectorAll("[data-reveal]");
@@ -191,10 +272,9 @@ function App() {
   }, []);
 
   async function refreshData() {
-    const [resultData, voteData] = await Promise.all([
-      fetchResults(),
-      fetchVotes(),
-    ]);
+    const resultData = await fetchActiveSurvey();
+    const voteData = await fetchVotesForSurvey(resultData.survey.id);
+    setActiveSurvey(resultData.survey);
     setResults(resultData.results);
     setTotal(resultData.total);
     setVotes(voteData.votes);
@@ -205,11 +285,10 @@ function App() {
     let active = true;
     async function refresh() {
       try {
-        const [resultData, voteData] = await Promise.all([
-          fetchResults(),
-          fetchVotes(),
-        ]);
+        const resultData = await fetchActiveSurvey();
+        const voteData = await fetchVotesForSurvey(resultData.survey.id);
         if (!active) return;
+        setActiveSurvey(resultData.survey);
         setResults(resultData.results);
         setTotal(resultData.total);
         setVotes(voteData.votes);
@@ -232,7 +311,11 @@ function App() {
     setFormError(false);
     setIsSubmitting(true);
     try {
-      const saved = await sendVote({ nickname, choice });
+      const saved = await sendVote({
+        survey_id: activeSurvey.id,
+        nickname,
+        choice,
+      });
       setNickname("");
       setChoice("");
       setFormMessage(saved.message);
@@ -249,33 +332,11 @@ function App() {
     }
   }
 
-  async function handleExport(event) {
-    event.preventDefault();
-    setExportMessage("");
-    setIsExporting(true);
-    try {
-      const response = await downloadCsv(adminKey);
-      const url = URL.createObjectURL(await response.blob());
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "sondage-classe.csv";
-      document.body.append(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      setExportMessage("Export téléchargé.");
-    } catch (error) {
-      setExportMessage(error.message);
-    } finally {
-      setIsExporting(false);
-    }
-  }
-
   const sortedResults = [...results].sort(
     (first, second) =>
       second.count - first.count ||
-      CHOICES.findIndex((item) => item.value === first.label) -
-        CHOICES.findIndex((item) => item.value === second.label),
+      activeSurvey.choices.findIndex((item) => item.label === first.label) -
+        activeSurvey.choices.findIndex((item) => item.label === second.label),
   );
 
   return (
@@ -313,10 +374,10 @@ function App() {
 
         <section className="hero" id="accueil">
           <div className="hero-copy" data-reveal>
-            <p className="eyebrow"><span>01</span> / LE BAROMÈTRE DE LA CLASSE</p>
+            <p className="eyebrow"><span>01</span> / {activeSurvey.title}</p>
             <h1>Chaque avis<br /><em>fait avancer</em><br />le collectif.</h1>
             <p className="hero-description">
-              Une question, quatre ressentis. Donne ton avis avec un pseudonyme
+              Une question, {activeSurvey.choices.length} choix. Donne ton avis avec un pseudonyme
               fictif et découvre la tendance de la classe en direct.
             </p>
             <a className="scroll-link" href="#sondage">
@@ -333,12 +394,12 @@ function App() {
         <section className="survey-layout" id="sondage">
           <article className="glass-card vote-card" data-reveal>
             <div className="card-heading">
-              <div><p className="section-kicker">TA VOIX</p><h2>Comment as-tu vécu cette séance ?</h2></div>
+              <div><p className="section-kicker">{activeSurvey.title}</p><h2>{activeSurvey.question}</h2></div>
               <span className="card-index">01 — 02</span>
             </div>
-            <p className="card-intro">Choisis le ressenti qui te correspond le mieux.</p>
+            <p className="card-intro">{activeSurvey.instruction}</p>
             <form onSubmit={handleVote}>
-              <label className="field-label" htmlFor="nickname">TON PSEUDONYME <span>REQUIS</span></label>
+              <label className="field-label" htmlFor="nickname">PSEUDONYME <span>REQUIS</span></label>
               <input
                 autoComplete="off"
                 className="nickname-input"
@@ -351,26 +412,26 @@ function App() {
               />
               <span className="field-hint">Utilise un pseudonyme fictif, pas ton vrai nom.</span>
               <fieldset className="choice-fieldset">
-                <legend className="field-label">TON RESSENTI</legend>
+                <legend className="field-label">{activeSurvey.choice_heading}</legend>
                 <div className="choice-grid">
-                  {CHOICES.map((item, index) => (
-                    <label className={`choice-option ${choice === item.value ? "is-selected" : ""}`} key={item.value}>
+                  {activeSurvey.choices.map((item, index) => (
+                    <label className={`choice-option ${choice === item.label ? "is-selected" : ""}`} key={item.label}>
                       <input
-                        checked={choice === item.value}
+                        checked={choice === item.label}
                         name="choice"
-                        onChange={() => setChoice(item.value)}
+                        onChange={() => setChoice(item.label)}
                         required={index === 0}
                         type="radio"
-                        value={item.value}
+                        value={item.label}
                       />
                       <span className="choice-mark">{item.mark}</span>
-                      <span className="choice-text"><strong>{item.value}</strong><small>{item.note}</small></span>
+                      <span className="choice-text"><strong>{item.label}</strong><small>{item.description}</small></span>
                       <span className="choice-check" aria-hidden="true">✓</span>
                     </label>
                   ))}
                 </div>
               </fieldset>
-              <button className="submit-button" disabled={isSubmitting || !choice} type="submit">
+              <button className="submit-button" disabled={isSubmitting || !choice || !activeSurvey.id} type="submit">
                 <span>{isSubmitting ? "ENVOI EN COURS…" : "ENVOYER MA RÉPONSE"}</span><span className="submit-arrow">↗</span>
               </button>
               <p className={`form-message ${formError ? "is-error" : ""}`} role="status" aria-live="polite">
@@ -393,7 +454,7 @@ function App() {
                 <div className="result-row" key={item.label}>
                   <div className="result-label"><span>{index + 1}. {item.label}</span><span><b>{item.count}</b><i>{item.percentage}%</i></span></div>
                   <div className="result-track" role="progressbar" aria-label={`${item.label}: ${item.percentage}%`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={item.percentage}>
-                    <span className={`result-fill result-fill-${CHOICES.findIndex((choiceItem) => choiceItem.value === item.label)}`} style={{ width: `${item.percentage}%` }} />
+                    <span className={`result-fill result-fill-${activeSurvey.choices.findIndex((choiceItem) => choiceItem.label === item.label) % 4}`} style={{ width: `${item.percentage}%` }} />
                   </div>
                 </div>
               ))}
@@ -435,17 +496,6 @@ function App() {
           </div>
         </section>
 
-        <details className="admin-panel" data-reveal>
-          <summary><span>ESPACE ADMINISTRATEUR</span><span className="admin-summary-note">EXPORT CSV PROTÉGÉ <b>＋</b></span></summary>
-          <form className="admin-form" onSubmit={handleExport}>
-            <label className="field-label" htmlFor="admin-key">CLÉ ADMINISTRATEUR</label>
-            <div className="admin-controls">
-              <input autoComplete="current-password" id="admin-key" onChange={(event) => setAdminKey(event.target.value)} placeholder="Saisir la clé configurée sur l’API" required type="password" value={adminKey} />
-              <button className="admin-button" disabled={isExporting} type="submit">{isExporting ? "PRÉPARATION…" : "TÉLÉCHARGER LE CSV"}</button>
-            </div>
-            <p className="form-message" role="status">{exportMessage}</p>
-          </form>
-        </details>
         <footer className="page-footer">
           <a className="footer-brand" href="#accueil">S<span>.</span></a>
           <p>CONÇU PAR <strong>SOLLO TSALA</strong><span>PYTHON · CSS · JAVASCRIPT · REACT · FASTAPI</span></p>

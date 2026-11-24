@@ -3,10 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "Console de bureau pour gérer les sondages de classe",
+  "author": "Sondage",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "build:admin": "vite build --config vite.admin.config.js",
+    "preview": "vite preview",
+    "admin:desktop": "npm run build:admin && electron electron/main.cjs",
+    "admin:installer": "npm run build:admin && electron-builder --win nsis"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -14,6 +20,32 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.4.0",
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
     "vite": "^6.1.0"
+  },
+  "build": {
+    "appId": "fr.sondage.admin",
+    "productName": "Sondage Admin",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "admin-dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "Sondage-Admin-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Sondage Admin"
+    }
   }
 }

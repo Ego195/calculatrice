@@ -1,4 +1,4 @@
--- Run once in the Supabase SQL Editor for the public FastAPI survey.
+-- Run after supabase_surveys_migration.sql in the Supabase SQL Editor.
 -- The public page intentionally displays fictitious nicknames and choices.
 alter table public.votes enable row level security;
 
@@ -19,5 +19,14 @@ for insert
 to anon
 with check (
   char_length(trim(nickname)) between 1 and 30
-  and choice in ('Très bien', 'Bien', 'Moyen', 'À revoir')
+  and survey_id is not null
+  and exists (
+    select 1
+    from public.survey_choices
+    join public.surveys
+      on surveys.id = survey_choices.survey_id
+    where survey_choices.survey_id = votes.survey_id
+      and survey_choices.label = votes.choice
+      and surveys.is_active
+  )
 );
